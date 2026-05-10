@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/StartScene.unity
+    guid: c202a9a205fc4954781d045ce7ce32e3
+  - enabled: 1
+    path: Assets/Scenes/HeroKnight.unity
+    guid: 27d67bf9f63ded043918bd2bfff09ee1
+  - enabled: 1
+    path: Assets/Scenes/HomeLevel.unity
+    guid: 63a1b8b1e4ec9ab48a9878f670c3e2de
+  - enabled: 1
+    path: Assets/Scenes/FinalLevel.unity
+    guid: a2f9be831b967b6429b2aa2c4539421a
+  m_configObjects: {}
