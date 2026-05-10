@@ -154,7 +154,7 @@ else if (Input.GetMouseButtonUp(1))
         m_playerHealth.SetBlocking(false);
 }
         // Roll
-        else if ((Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)) && !m_rolling && !m_isWallSliding)
+        else if ((Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift)||Input.GetKey(KeyCode.S)) && !m_rolling && !m_isWallSliding)
         {
             m_rolling = true;
             m_rollCurrentTime = 0.0f;
