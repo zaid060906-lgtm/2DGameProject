@@ -1148,6 +1148,10 @@ PrefabInstance:
       propertyPath: m_attackSound
       value: 
       objectReference: {fileID: 8300000, guid: 8a8da6346fb9d8a45b41b7bf55c39f01, type: 3}
+    - target: {fileID: 9043920546160527475, guid: a4b4a6d32bcb19248a754d6602ffc7e4, type: 3}
+      propertyPath: m_defenceSound
+      value: 
+      objectReference: {fileID: 8300000, guid: b6831370dbf4e7f49900a77245fb486f, type: 3}
     - target: {fileID: 9117128348835321587, guid: a4b4a6d32bcb19248a754d6602ffc7e4, type: 3}
       propertyPath: m_Size.x
       value: 0.62922376

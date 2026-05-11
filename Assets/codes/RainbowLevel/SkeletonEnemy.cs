@@ -16,12 +16,16 @@ public class SkeletonEnemy : MonoBehaviour
     public int   attack2Damage  = 2;
     public float attackCooldown = 1.4f;
 
+    [SerializeField] AudioClip S_attackSound;
+    [SerializeField] AudioClip s_MoveSound;
+
     private enum State { Idle, Chase, Attack1, Attack2, Hurt, Dead }
     private State currentState = State.Idle;
 
     private Animator      anim;
     private Rigidbody2D   rb;
     private Transform     player;
+    private AudioSource S_audioSource;
    
 
     private int   currentHealth;
@@ -42,6 +46,7 @@ public class SkeletonEnemy : MonoBehaviour
     {
         anim = GetComponent<Animator>();
         rb   = GetComponent<Rigidbody2D>();
+        S_audioSource = GetComponent<AudioSource>();
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null)
@@ -50,11 +55,11 @@ public class SkeletonEnemy : MonoBehaviour
             playerHealth = playerObj.GetComponent<PlayerHealth>();
 
             if (playerHealth == null)
-                Debug.LogError("ما لاقى PlayerHealth1 على اللاعب!");
+                Debug.LogError("  PlayerHealth1  !");
         }
         else
         {
-            Debug.LogError("ما لاقى GameObject بـ Tag = Player!");
+            Debug.LogError(" Tag = Player!");
         }
 
         currentHealth = maxHealth;
@@ -130,11 +135,13 @@ public class SkeletonEnemy : MonoBehaviour
 
             case State.Chase:
                 anim.SetBool(HashWalk, true);
+                    PlaySound(s_MoveSound);
                 break;
 
             case State.Attack1:
                 isAttacking = true;
                 anim.SetTrigger(HashAttack1);
+                PlaySound(S_attackSound);
                 StartCoroutine(DealDamageAfterDelay(attack1Damage, 0.4f));
                 StartCoroutine(ReturnAfterAttack(0.8f));
                 break;
@@ -142,6 +149,7 @@ public class SkeletonEnemy : MonoBehaviour
             case State.Attack2:
                 isAttacking = true;
                 anim.SetTrigger(HashAttack2);
+                PlaySound(S_attackSound);
                 StartCoroutine(DealDamageAfterDelay(attack2Damage, 0.4f));
                 StartCoroutine(ReturnAfterAttack(0.8f));
                 break;
@@ -242,5 +250,10 @@ public class SkeletonEnemy : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, detectionRange);
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
+    }
+     void PlaySound(AudioClip clip)
+    {
+        if (clip != null)
+            S_audioSource.PlayOneShot(clip);
     }
 }
