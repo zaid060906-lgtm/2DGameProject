@@ -24,7 +24,7 @@ public class GameManager : MonoBehaviour
             sr.color        = Color.yellow;
             sr.sortingOrder = 10;
 
-            bulletObjects[i].transform.localScale = new Vector3(2f, 2f, 1f);
+            bulletObjects[i].transform.localScale = new Vector3(2f, 3.5f, 1f);
 
             CircleCollider2D col = bulletObjects[i].AddComponent<CircleCollider2D>();
             col.isTrigger = true;
