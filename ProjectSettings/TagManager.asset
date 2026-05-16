@@ -7,11 +7,12 @@ TagManager:
   - Trap
   - Damage
   - PlayerSword
+  - Boss
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Enamy
   - Water
   - UI
   - 

@@ -1,22 +1,36 @@
+using System.Collections;
 using UnityEngine;
 
-public enum BossState { Idle, Chase, Attack, Hurt, Dead }
+public enum BossState { Idle, Patrol, Chase, Attack, Hurt, Dead }
 
 public class BossAI : MonoBehaviour
 {
+    [SerializeField] AudioClip AttackSound;
+    private AudioSource audioSource;
     [Header("Settings")]
-    public float chaseRange = 8f;
-    public float attackRange = 3f;
-    public float moveSpeed = 3f;
+    public float detectionRange = 8f;  // مدى الالتقاط
+    public float attackRange = 5f;     // مدى الهجوم
+    public float moveSpeed = 7f;
     public float attackCooldown = 2f;
-    public int maxHealth = 100;
+    public int maxHealth = 30;
 
     [Header("References")]
     public Transform player;
     public GameObject projectilePrefab;
-    public Transform firePoint; // طرف العصا
+    public Transform firePoint;
 
-    private BossState currentState = BossState.Idle;
+    [Header("Patrol")]
+    public Transform pointA;
+    public Transform pointB;
+    private Transform currentTarget;
+
+    [Header("Attack Timing")]
+    public float attackDuration = 2f;
+    public float attackRestTime = 2f;
+    private float attackPhaseTimer = 0.5f;
+    private bool isInAttackPhase = false;
+
+    private BossState currentState = BossState.Patrol;
     private Animator anim;
     private Rigidbody2D rb;
     private int currentHealth;
@@ -26,7 +40,12 @@ public class BossAI : MonoBehaviour
     {
         anim = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
+        audioSource = GetComponent<AudioSource>();
         currentHealth = maxHealth;
+        currentTarget = pointB;
+
+        if (player == null)
+            player = GameObject.FindGameObjectWithTag("Player").transform;
     }
 
     void Update()
@@ -40,26 +59,82 @@ public class BossAI : MonoBehaviour
         {
             case BossState.Idle:
                 anim.SetFloat("Speed", 0f);
-                if (dist < chaseRange) ChangeState(BossState.Chase);
+                // التقاط اللاعب بـ detectionRange
+                if (dist <= detectionRange)
+                    ChangeState(BossState.Chase);
                 break;
 
-            case BossState.Chase:
-                ChasePlayer();
-                if (dist < attackRange && attackTimer <= 0f)
-                    ChangeState(BossState.Attack);
-                else if (dist > chaseRange)
-                    ChangeState(BossState.Idle);
+            case BossState.Patrol:
+                PatrolMove();
+                // التقاط اللاعب بـ detectionRange
+                if (dist <= detectionRange)
+                    ChangeState(BossState.Chase);
                 break;
+
+           case BossState.Chase:
+    // إذا اللاعب خرج من الـ detection — ارجع Patrol
+    if (dist > detectionRange)
+    {
+        isInAttackPhase = false;
+        attackPhaseTimer = attackRestTime;
+        ChangeState(BossState.Patrol);
+        break;
+    }
+
+    // وقّفي دايماً — ما تمشي وراه
+    rb.velocity = Vector2.zero;
+    anim.SetFloat("Speed", 0f);
+    FlipTowardsPlayer();
+
+    // هاجمي بس لما يكون في الـ attack range
+    if (dist <= attackRange)
+    {
+        attackPhaseTimer -= Time.deltaTime;
+
+        if (isInAttackPhase)
+        {
+            if (attackTimer <= 0f)
+                ChangeState(BossState.Attack);
+
+            if (attackPhaseTimer <= 0f)
+            {
+                isInAttackPhase = false;
+                attackPhaseTimer = attackRestTime;
+            }
+        }
+        else
+        {
+            if (attackPhaseTimer <= 0f)
+            {
+                isInAttackPhase = true;
+                attackPhaseTimer = attackDuration;
+            }
+        }
+    }
+    break;
 
             case BossState.Attack:
                 rb.velocity = Vector2.zero;
                 anim.SetFloat("Speed", 0f);
+                FlipTowardsPlayer();
                 break;
 
             case BossState.Hurt:
                 rb.velocity = Vector2.zero;
+                anim.SetFloat("Speed", 0f);
+                FlipTowardsPlayer();
+                break;
+
+           case BossState.Dead:
+                anim.SetTrigger("Death");
+                rb.velocity = Vector2.zero;
+                rb.bodyType = RigidbodyType2D.Static;
+                GameObject hpBar = GameObject.Find("BossHealthBar");
+                if (hpBar != null) hpBar.SetActive(false);
+                StartCoroutine(DestroyAfterDeath());
                 break;
         }
+        
     }
 
     void ChasePlayer()
@@ -67,10 +142,29 @@ public class BossAI : MonoBehaviour
         Vector2 dir = (player.position - transform.position).normalized;
         rb.velocity = new Vector2(dir.x * moveSpeed, rb.velocity.y);
         anim.SetFloat("Speed", Mathf.Abs(dir.x));
+        FlipTowardsPlayer();
+    }
 
-        // تقليب الشخصية
-        if (dir.x < 0) transform.localScale = new Vector3(-1, 1, 1);
-        else transform.localScale = new Vector3(1, 1, 1);
+    void FlipTowardsPlayer()
+    {
+        float dirX = player.position.x - transform.position.x;
+        if (dirX < 0)
+            transform.localScale = new Vector3(-Mathf.Abs(transform.localScale.x), 1, 1);
+        else
+            transform.localScale = new Vector3(Mathf.Abs(transform.localScale.x), 1, 1);
+    }
+
+    void PatrolMove()
+    {
+        Vector2 dir = (currentTarget.position - transform.position).normalized;
+        rb.velocity = new Vector2(dir.x * moveSpeed * 0.5f, rb.velocity.y);
+        anim.SetFloat("Speed", Mathf.Abs(dir.x));
+
+        if (dir.x < 0) transform.localScale = new Vector3(-Mathf.Abs(transform.localScale.x), 1, 1);
+        else transform.localScale = new Vector3(Mathf.Abs(transform.localScale.x), 1, 1);
+
+        if (Vector2.Distance(transform.position, currentTarget.position) < 0.5f)
+            currentTarget = currentTarget == pointA ? pointB : pointA;
     }
 
     void ChangeState(BossState newState)
@@ -88,17 +182,17 @@ public class BossAI : MonoBehaviour
             case BossState.Dead:
                 anim.SetTrigger("Death");
                 rb.velocity = Vector2.zero;
-                GetComponent<Collider2D>().enabled = false;
+                rb.bodyType = RigidbodyType2D.Static;
+                StartCoroutine(DestroyAfterDeath());
                 break;
         }
     }
 
-    // تُستدعى من Animation Event في منتصف الـ Attack animation
     public void FireProjectile()
-{
-    // اعمل الكرة عند طرف العصا
-    Instantiate(projectilePrefab, firePoint.position, Quaternion.identity);
-}
+    {
+        Instantiate(projectilePrefab, firePoint.position, Quaternion.identity);
+        PlaySound(AttackSound);
+    }
 
     public void TakeDamage(int dmg)
     {
@@ -109,15 +203,40 @@ public class BossAI : MonoBehaviour
         else ChangeState(BossState.Hurt);
     }
 
-    // تُستدعى من Animation Event في نهاية Hurt animation
     public void OnHurtEnd()
     {
         ChangeState(BossState.Chase);
     }
 
-    // تُستدعى من Animation Event في نهاية Attack animation
     public void OnAttackEnd()
     {
         ChangeState(BossState.Chase);
     }
+
+    void OnDrawGizmosSelected()
+    {
+        // detection range بالأصفر
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, detectionRange);
+        // attack range بالأحمر
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
+    }
+    System.Collections.IEnumerator DestroyAfterDeath()
+{
+    yield return new WaitForSeconds(2f); // انتظر تخلص الـ Death animation
+    GetComponent<Collider2D>().enabled = false; // ✅ هون بس
+    yield return new WaitForSeconds(0.1f);
+    Destroy(gameObject);
+}
+public int GetCurrentHealth()
+{
+    return currentHealth;
+}
+ void PlaySound(AudioClip clip)
+    {
+        if (clip != null)
+            audioSource.PlayOneShot(clip);
+    }
+
 }

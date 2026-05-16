@@ -13,7 +13,6 @@ public class BossProjectile : MonoBehaviour
         anim = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
 
-        // اتجاه نحو اللاعب
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
@@ -28,8 +27,14 @@ public class BossProjectile : MonoBehaviour
     {
         if (exploding) return;
 
+        // تجاهل الـ Boss نفسه
+        if (col.CompareTag("Boss")) return;
+
         if (col.CompareTag("Player"))
-            col.GetComponent<PlayerHealth>()?.TakeDamage(damage);
+        {
+            PlayerHealth ph = col.GetComponent<PlayerHealth>();
+            if (ph != null) ph.TakeDamage(damage);
+        }
 
         Explode();
     }
@@ -42,6 +47,5 @@ public class BossProjectile : MonoBehaviour
         GetComponent<Collider2D>().enabled = false;
     }
 
-    // Animation Event في نهاية Explode
     public void OnExplodeEnd() => Destroy(gameObject);
 }

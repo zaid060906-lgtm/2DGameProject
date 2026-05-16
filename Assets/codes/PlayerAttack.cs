@@ -44,37 +44,38 @@ public class PlayerAttack : MonoBehaviour
     }
 
     void CheckHit()
+{
+    if (!m_canDealDamage) return;
+
+    Vector2 attackCenter = (Vector2)transform.position 
+                         + new Vector2(m_facingDirection * attackRangeX, 0);
+
+    Collider2D[] hits = Physics2D.OverlapBoxAll(
+        attackCenter,
+        new Vector2(attackRangeX * 2, attackRangeY * 2),
+        0f,
+        enemyLayer
+    );
+    Debug.Log("عدد الأعداء اللي التقطهم: " + hits.Length);
+
+   foreach (Collider2D hit in hits)
+{
+    SkeletonEnemy skeleton = hit.GetComponent<SkeletonEnemy>();
+    if (skeleton != null)
     {
-        if (!m_canDealDamage) return;
-
-        // نحدد مركز منطقة الضرب أمام اللاعب
-        Vector2 attackCenter = (Vector2)transform.position 
-                             + new Vector2(m_facingDirection * attackRangeX, 0);
-
-        // نشوف كل الأعداء في النطاق
-        Collider2D[] hits = Physics2D.OverlapBoxAll(
-            attackCenter,
-            new Vector2(attackRangeX * 2, attackRangeY * 2),
-            0f,
-            enemyLayer
-        );
-
-        foreach (Collider2D hit in hits)
-        {
-            // نحاول نوصل للسكيلاتون
-            SkeletonEnemy skeleton = hit.GetComponent<SkeletonEnemy>();
-            if (skeleton != null)
-            {
-                skeleton.TakeDamage(attackDamage);
-                Debug.Log("اللاعب ضرب: " + hit.name);
-            }
-
-            // لو عندك أعداء ثانيين بالمستقبل
-            // OtherEnemy other = hit.GetComponent<OtherEnemy>();
-            // if (other != null) other.TakeDamage(attackDamage);
-        }
+        skeleton.TakeDamage(attackDamage);
+        Debug.Log("اللاعب ضرب: " + hit.name);
     }
 
+    // ✅ هاد الإضافة
+    BossAI boss = hit.GetComponent<BossAI>();
+    if (boss != null)
+    {
+        boss.TakeDamage(attackDamage);
+        Debug.Log("اللاعب ضرب الملكة!");
+    }
+}
+}
     // ==============================
     // Gizmos تشوف منطقة الضرب بالـ Editor
     // ==============================
